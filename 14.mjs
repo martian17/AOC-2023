@@ -23,15 +23,6 @@ O.#..O.#.#
     break;
 }
 
-
-const transpose = function(block){
-    let res = [];
-    for(let i = 0; i < block[0].length; i++){
-        res.push(block.map(b=>b[i]).join(""));
-    }
-    return res;
-};
-
 const rotateCW = function(block){
     let res = [];
     for(let i = 0; i < block[0].length; i++){
