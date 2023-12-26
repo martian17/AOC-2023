@@ -1,0 +1,18 @@
+lockfileVersion: '6.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+dependencies:
+  ds-js:
+    specifier: github:martian17/ds-js
+    version: github.com/martian17/ds-js/01f2ca04247fd76ca8c76146fc7cd75283131ce1
+
+packages:
+
+  github.com/martian17/ds-js/01f2ca04247fd76ca8c76146fc7cd75283131ce1:
+    resolution: {tarball: https://codeload.github.com/martian17/ds-js/tar.gz/01f2ca04247fd76ca8c76146fc7cd75283131ce1}
+    name: ds-js
+    version: 1.0.0
+    dev: false
