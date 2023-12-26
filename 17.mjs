@@ -1,7 +1,7 @@
 import {promises as fs} from "fs";
 import {MinHeap} from "ds-js/heap.mjs";
 
-const select = 2;
+const select = 1;
 
 let text;
 switch(select){
@@ -58,6 +58,14 @@ const mod4 = function(n){
 const isCoordinateValid = function(x,y,width,height){
     return x >= 0 && y >= 0 && x < width && y < height;
 };
+
+const range = function(a,b){
+    const arr = [];
+    for(let i = a; i < b; i++){
+        arr.push(i);
+    }
+    return arr;
+}
 
 const dijkstra = function(graph,start,destinations){
     destinations = new Set(destinations);
@@ -211,20 +219,12 @@ const solve2 = function(lines){
     console.log(graph);
     // run dijkstra on graph
     const sol1 = dijkstra(graph,"0,0,0,0",[
-        `${width-1},${height-1},0,0`,
-        `${width-1},${height-1},0,1`,
-        `${width-1},${height-1},0,2`,
-        `${width-1},${height-1},1,0`,
-        `${width-1},${height-1},1,1`,
-        `${width-1},${height-1},1,2`
+        ...range(0,10).map(v=>`${width-1},${height-1},0,${v}`),
+        ...range(0,10).map(v=>`${width-1},${height-1},1,${v}`)
     ]);
     const sol2 = dijkstra(graph,"0,0,1,0",[
-        `${width-1},${height-1},0,0`,
-        `${width-1},${height-1},0,1`,
-        `${width-1},${height-1},0,2`,
-        `${width-1},${height-1},1,0`,
-        `${width-1},${height-1},1,1`,
-        `${width-1},${height-1},1,2`
+        ...range(0,10).map(v=>`${width-1},${height-1},0,${v}`),
+        ...range(0,10).map(v=>`${width-1},${height-1},1,${v}`)
     ]);
     const [start,end,distance,route] = sol1[2] < sol2[2] ? sol1 : sol2;
     // visualize the route
@@ -238,19 +238,19 @@ const solve2 = function(lines){
     console.log(start,end,distance,route);
     console.log("Solution 2:",distance);
 
-    console.log(`8,4,1,4`  ,graph.get(`8,4,1,4`  ));
-    console.log(`9,4,0,0`  ,graph.get(`9,4,0,0`  ));
-    console.log(`10,4,0,1` ,graph.get(`10,4,0,1` ));
-    console.log(`11,4,0,2` ,graph.get(`11,4,0,2` ));
-    console.log(`12,4,0,3` ,graph.get(`12,4,0,3` ));
-    console.log(`12,5,1,0` ,graph.get(`12,5,1,0` ));
-    console.log(`12,6,1,1` ,graph.get(`12,6,1,1` ));
-    console.log(`12,7,1,2` ,graph.get(`12,7,1,2` ));
-    console.log(`12,8,1,3` ,graph.get(`12,8,1,3` ));
-    console.log(`12,9,1,4` ,graph.get(`12,9,1,4` ));
-    console.log(`12,10,1,5`,graph.get(`12,10,1,5`));
-    console.log(`12,11,1,6`,graph.get(`12,11,1,6`));
-    console.log(`12,12,1,7`,graph.get(`12,12,1,7`));
+    // console.log(`8,4,1,4`  ,graph.get(`8,4,1,4`  ));
+    // console.log(`9,4,0,0`  ,graph.get(`9,4,0,0`  ));
+    // console.log(`10,4,0,1` ,graph.get(`10,4,0,1` ));
+    // console.log(`11,4,0,2` ,graph.get(`11,4,0,2` ));
+    // console.log(`12,4,0,3` ,graph.get(`12,4,0,3` ));
+    // console.log(`12,5,1,0` ,graph.get(`12,5,1,0` ));
+    // console.log(`12,6,1,1` ,graph.get(`12,6,1,1` ));
+    // console.log(`12,7,1,2` ,graph.get(`12,7,1,2` ));
+    // console.log(`12,8,1,3` ,graph.get(`12,8,1,3` ));
+    // console.log(`12,9,1,4` ,graph.get(`12,9,1,4` ));
+    // console.log(`12,10,1,5`,graph.get(`12,10,1,5`));
+    // console.log(`12,11,1,6`,graph.get(`12,11,1,6`));
+    // console.log(`12,12,1,7`,graph.get(`12,12,1,7`));
 }
 
 //solve1(text.trim().split("\n"));
