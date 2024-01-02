@@ -120,57 +120,49 @@ const problem1 = function(text){
 }
 
 const problem2 = function(text){
-    const verts = new Map;
+    // segmentation -> (tree shaking) -> recursive traversal
     const lines = text.split("\n");
     const width = lines[0].length;
     const height = lines.length;
-    for(let y = 0; y < height; y++){
-        for(let x = 0; x < width; x++){
-            let c0 = lines[y][x];
-            if(c0 === "#")continue
-            let vert = new Map;
-            for(let [dx,dy] of corners){
-                let x1 = x+dx;
-                let y1 = y+dy;
-                if(x1 < 0 || y1 < 0 || x1 >= width || y1 >= height)continue;
-                let c1 = lines[y1][x1];
-                if(c1 === "#")continue
-                vert.set(`${x1},${y1}`,1);
-            }
-            verts.set(`${x},${y}`,vert);
-        }
-    }
-    for(let [vid,vert] of [...verts]){
-        if(vert.size !== 2)continue;
-        //splice
-        const [[v1id,v1w],[v2id,v2w]] = vert;
-        const w = v1w+v2w;
-        const v1 = verts.get(v1id);
-        const v2 = verts.get(v2id);
-        v1.delete(vid);
-        v2.delete(vid);
-        verts.delete(vid);
-        v1.set(v2id,w);
-        v2.set(v1id,w);
-    }
-    console.log(verts);
-    //brute force search through the verts
-    console.log(width,height);
+    let sx = 1;
+    let sy = 0;
+    let gx = width-2;
+    let gy = height-1;
+    // do a dumb TSP search
+    const stack = [];
+    let x = sx;
+    let y = sy;
+    let dir = 0;
+    const visited = new Set;
     let max = 0;
-    const traverse = function(vid,w,visited){
-        if(vid === `${width-2},${height-1}`){
-            if(w > max)max = w;
-            return;
+    while(true){
+        let id = `${x},${y}`;
+        if(dir === 4){
+            visited.delete(id);
+            if(stack.length === 0)break;
+            ({x,y,dir} = stack.pop());
+            continue;
         }
-        const vert = verts.get(vid);
-        for(let [vid1,w1] of vert){
-            if(visited.has(vid1))continue;
-            visited.add(vid1)
-            traverse(vid1,w+w1,visited);
-            visited.delete(vid1);
+        //console.log(x,y,dir);
+        if(x === gx && y === gy){
+            let len = visited.size;
+            if(len > max)max = len;
         }
+        let [dx,dy] = corners[dir];
+        let x1 = x+dx;
+        let y1 = y+dy;
+        let id1 = `${x1},${y1}`;
+        const r = lines[y1]?.[x1];
+        if(!r || r === "#" || visited.has(id1)){
+            dir++;
+            continue;
+        }
+        visited.add(id)
+        stack.push({x,y,dir:dir+1});
+        x = x1;
+        y = y1;
+        dir = 0;
     }
-    traverse("1,0",0,new Set);
     console.log("problem 2:",max);
 }
 

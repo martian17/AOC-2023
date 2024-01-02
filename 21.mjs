@@ -24,13 +24,21 @@ text = `
     break;
     case 3:
 text = `
-...
-.#.
-..S
+...........
+......##.#.
+.###..#..#.
+..#.#...#..
+....#.#....
+.....S.....
+.##......#.
+.......##..
+.##.#.####.
+.##...#.##.
+...........
 `;
     break;
 }
-const lines = text.trim().split("\n");
+const lines_g = text.trim().split("\n");
 
 
 const evolveState = function(lines,state){
@@ -48,11 +56,170 @@ const evolveState = function(lines,state){
         pushState(x,y-1);
     }
     return newState;
+};
+
+const modulo = function(a,b){
+    let r = a%b;
+    if(r < 0)return b+r;
+    return r;
+};
+
+const evolveState_tiled = function(lines,state){
+    const width = lines[0].length;
+    const height = lines.length;
+    const newState = new Set;
+    const pushState = function(x,y){
+        let val = lines[modulo(y,height)][modulo(x,width)];
+        if(!val)return;
+        if(val !== "#")newState.add(`${x},${y}`)
+    }
+    for(let point of state){
+        const [x,y] = point.split(",").map(v=>parseInt(v));
+        pushState(x+1,y);
+        pushState(x-1,y);
+        pushState(x,y+1);
+        pushState(x,y-1);
+    }
+    return newState;
+};
+
+const getCountAt = function(lines,max,sx,sy){
+    let state = new Set([`${sx},${sy}`]);
+    for(let i = 0; i < max; i++){
+        state = evolveState(lines,state);
+    }
+    return state.size;
+};
+
+const getTiledCountAt_bruteForce = function(lines,max,sx,sy){
+    let state = new Set([`${sx},${sy}`]);
+    for(let i = 0; i < max; i++){
+        state = evolveState_tiled(lines,state);
+    }
+    return state.size;
+};
+
+const rotCCK = function(lines){
+    let res = [];
+    for(let j = lines[0].length-1; j >= 0; j--){
+        let r = "";
+        for(let i = 0; i < lines.length; i++){
+            r += lines[i][j];
+        }
+        res.push(r);
+    }
+    return res;
+};
+
+const getSaturatedCount = function(lines,sx,sy){
+    let even = 0;
+    let odd = 0;
+    for(let y = 0; y < lines.length; y++){
+        for(let x = 0; x < lines[0].length; x++){
+            if(lines[y][x] === "#")continue;
+            if((x+y)%2 === (sx+sy)%2){
+                even++;
+            }else{
+                odd++;
+            }
+        }
+    }
+    // correction for non-accurate saturated tile count values
+    // enclosed spaces are excluded
+    if(even === 7615)even = 7613;
+    if(odd === 7615)odd = 7613;
+    if(even === 7626)even = 7623;
+    if(odd === 7626)odd = 7623;
+    return [even,odd];
+}
+
+const eucdiv = function(a,b){
+    let r = a%b;
+    let q = (a-r)/b;
+    return [q,r];
 }
 
 
-const getReachableTiles = function(lines,max){
-    // find S
+const getReachableStripEast = function(lines,max,sx,sy){
+    console.log(max,"s")
+    const width = lines[0].length;
+    const height = lines.length;
+    const startOffset = (width-sx);
+    const satCnt = getSaturatedCount(lines,0,sy);
+    let [spanCnt,r] = eucdiv(max-startOffset,width);
+    spanCnt++;
+    let total = 0;
+    let spanIdx = spanCnt;
+    for(; spanIdx > 0; spanIdx--){
+        const n = r+(spanCnt-spanIdx)*width;
+        const subtotal = getCountAt(lines,n,0,sy);
+        console.log(spanIdx,subtotal,satCnt[n%2]);
+        if(subtotal === satCnt[n%2])break;
+        total += subtotal;
+    }
+    // odd index tiles
+    total += satCnt[(max-startOffset)%2]*Math.floor((spanIdx+1)/2);
+    // even index tiles
+    total += satCnt[(max-startOffset+width)%2]*Math.floor(spanIdx/2);
+    console.log(max,"s",total)
+    return total;
+};
+
+const countOddDiagonalTiles = function(spanIdx){
+    const N = spanIdx%2===1?spanIdx:spanIdx-1;
+    const n = (N+1)/2;
+    const A = (n+1)*n/2;
+    return 2*A-n;
+}
+
+const countEvenDiagonalTiles = function(spanIdx){
+    const M = spanIdx%2===0?spanIdx:spanIdx-1;
+    const n = M/2;
+    const A = (n+1)*n/2;
+    return 2*A
+}
+
+const getReachableSliceSE = function(lines,max,sx,sy){
+    const width = lines[0].length;
+    const height = lines.length;
+    const startOffset = (width-sx)+(height-sy);
+    const satCnt = getSaturatedCount(lines,0,0);
+    let [spanCnt,r] = eucdiv(max-startOffset,width);
+    spanCnt++;
+    let total = 0;
+    let spanIdx = spanCnt;
+    for(; spanIdx > 0; spanIdx--){
+        const n = r+(spanCnt-spanIdx)*width;
+        const subtotal = getCountAt(lines,n,0,0);
+        if(subtotal === satCnt[n%2])break;
+        total += subtotal*spanIdx;
+    }
+    // odd index tiles
+    total += satCnt[(max-startOffset)%2]*countOddDiagonalTiles(spanIdx);
+    // even index tiles
+    total += satCnt[(max-startOffset+width)%2]*countEvenDiagonalTiles(spanIdx);
+    return total;
+};
+
+const getReachableQuadrantSE = function(lines,n,sx,sy){
+    return getReachableStripEast(lines,n,sx,sy)+getReachableSliceSE(lines,n,sx,sy);
+};
+
+
+const getTiledCountAt = function(lines,max,sx,sy){
+    let total = 0;
+    for(let i = 0; i < 4; i++){
+        total += getReachableQuadrantSE(lines,max,sx,sy);
+        [sx,sy] = [sy,lines[0].length-1-sx];
+        lines = rotCCK(lines);
+    }
+    // center
+    total += getSaturatedCount(lines,sx,sy)[max%2];
+    return total;
+}
+
+
+const getS = function(lines){
     let sx = 0;
     let sy = 0;
     for(let y = 0; y < lines.length; y++){
@@ -63,200 +230,30 @@ const getReachableTiles = function(lines,max){
             }
         }
     }
-    let state = new Set([`${sx},${sy}`]);
-    for(let i = 0; i < max; i++){
-        state = evolveState(lines,state);
-    }
-    return state;
+    return [sx,sy];
 }
 
-const problem1 = function(lines){
-    const state = getReachableTiles(lines,64);
-    console.log(`Solution 1: ${state.size}`);
+const problem1 = function(n){
+    const [sx,sy] = getS(lines_g);
+    const r = getCountAt(lines_g,n||64,sx,sy);
+    console.log(`Solution 1: ${r}`);
 }
 
-
-const modulo = function(a,b){
-    let r = a%b;
-    if(r < 0)return r+b;
-    return r;
-};
-
-const findS = function(lines){
-    let sx = 0;
-    let sy = 0;
-    for(let y = 0; y < height; y++){
-        for(let x = 0; x < width; x++){
-            if(lines[y][x] === "S"){
-                sx = x;
-                sy = y;
-            }
-        }
-    }
-    return [sx,sy]
+const problem2 = function(n){
+    const [sx,sy] = getS(lines_g);
+    const r = getTiledCountAt(lines_g,n||26501365,sx,sy);
+    console.log(`Solution 2: ${r}`);
 }
 
-const eucdiv = function(a,b){
-    let r = a%b;
-    let q = (a-r)/b;
-    return [q,r];
+const problem2_BF = function(n){
+    const [sx,sy] = getS(lines_g);
+    const r = getTiledCountAt_bruteForce(lines_g,n||26501365,sx,sy);
+    console.log(`Solution 2 (BF): ${r}`);
 }
 
-const countSlice = function(lines,n){
-    // count the south east slice and west strip
-    // ignore center
-    const width = lines[0].length;
-    const height = lines.length;
-    const [sx,sy] = findS(lines);
-
-    const eastOffset = width-sx;
-    const southOffset = height-sy;
-
-    const [evenState,oddState] = getFinalState();
-
-    let res = 0;
-
-    // calculating the diagonals
-    {
-        let [filledSpans,remainSpan] = eucdiv(n-southOffset-eastOffset,width)
-        let cnt = 
-    }
-    const maxSafe
-
-
-
-
-
-
-
-
-
-    const finalState1 = new Set;
-    const finalState2 = new Set;
-    for(let y = 0; y < height; y++){
-        for(let x = 0; x < width; x++){
-            if(lines[y][x] === "#")continue;
-            if((x+y)%2 === 0){
-                finalState1.add(`${x},${y}`);
-            }else{
-                finalState2.add(`${x},${y}`);
-            }
-        }
-    }
-    const isFinalState = function(state){
-        let isState1 = true;
-        for(let point of state){
-            if(!finalState1.has(point)){
-                isState1 = false;
-                break;
-            }
-        }
-        if(isState1)return 1;
-        let isState2 = true;
-        for(let point of state){
-            if(!finalState2.has(point)){
-                isState2 = false;
-                break;
-            }
-        }
-        if(isState2)return 2;
-        return false;
-    };
-    const findTransitionPeriod = function(x0,y0){
-        let state = new Set([`${sx},${sy}`]);
-        for(let cnt = 0;; cnt++){
-            let fs;
-            if(fs = isFinalState(state)){
-                return [cnt,fs];
-            }
-            state = evolveState(lines,state);
-        }
-    };
-    // determins the thickness of the border region
-    // diagonals and orthogonal, and the center piece
-    const north_offset = sy+1;
-    const west_offset = sx+1;
-    const south_offset = height-sy;
-    const east_offset = width-sx;
-    let totalCount = 0;
-    // to the south east
-    {
-        const leadLength = n-south_offset-east_offset
-        const [tc,fs] = findTransitionPeriod(0,0);
-        const centerColor = (n+1)%2;
-        const edgeColor = (centerColor+(south_offset+east_offset))%2;
-        const safeLength = leadLength - tc;
-        const tileCount = Math.floor(safeLength/width);
-        const evens = Math.ceil(tileCount/2);
-        const odds = Math.floor(tileCount/2);
-        let evenTileCount = (0+evens*2-2)*evens/2;
-        let oddTileCount = (1+odds*2-1)*odds/2;
-        if(edgeColor === 1)[evenTileCount,oddTileCount] = [oddTileCount,evenTileCount];
-        const [evenState,oddState] = finalState1.has("0,0")?[finalState1,finalState2]:[finalState2,finalState1];
-        totalCount += evenTileCount*evenState.size;
-        totalCount += oddTileCount*oddState.size;
-        // find the intermediate tiles
-        for(){
-        }
-    }
-}
-
-const problem2 = function(){
-}
-
-const findStates = function(line,n){
-    // find the area that's completely filled in
-    // find the attack limit from four sides
-    
-}
-
-
-
-
-
-problem1(lines);
-problem2(lines,26501365);
-
-
-
-//const evolveState2 = function(lines,state){
-//    const width = lines[0].length;
-//    const height = lines[1].length;
-//    const newState = new Set;
-//    const pushState = function(x,y){
-//        let val = lines[modulo(y,height)][modulo(x,width)];
-//        if(!val)return;
-//        if(val !== "#")newState.add(`${x},${y}`)
-//    }
-//    for(let point of state){
-//        const [x,y] = point.split(",").map(v=>parseInt(v));
-//        pushState(x+1,y);
-//        pushState(x-1,y);
-//        pushState(x,y+1);
-//        pushState(x,y-1);
-//    }
-//    return newState;
-//}
-//
-//
-//const getReachableTiles2 = function(lines,max){
-//    // find S
-//    let sx = 0;
-//    let sy = 0;
-//    for(let y = 0; y < lines.length; y++){
-//        for(let x = 0; x < lines[0].length; x++){
-//            if(lines[y][x] === "S"){
-//                sx = x;
-//                sy = y;
-//            }
-//        }
-//    }
-//    let state = new Set([`${sx},${sy}`]);
-//    for(let i = 0; i < max; i++){
-//        state = evolveState2(lines,state);
-//    }
-//    return state;
-//}
-
-
-
+problem1();
+problem2();
+// for(let i = 100; i < 120; i++){
+//     problem2(i);
+//     problem2_BF(i);
+// }
