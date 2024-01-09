@@ -31,6 +31,7 @@ text = text.trim();
 
 let loopPairs = function*(arr){
     for(let i = 0; i < arr.length-1; i++){
+        console.log(i,arr.length)
         for(let j = i+1; j < arr.length; j++){
             yield [arr[i],arr[j]];
         }
@@ -128,23 +129,12 @@ const solution = function(text){
             addEdge(r,nname);
         }
     }
-    console.log(graph.size);
     //console.log(graph);
     
     // find inseparable pairs
-    let sets = [];
-    let all = new Set;
-    let cnt = 0;
+    const inseparablePairs = [];
     outer:
     for(let [n1,n2] of loopPairs([...graph.keys()])){
-        if(cnt++%1000 === 0){
-            console.log(n1,sets.map(v=>v.size));
-            if(sets.length === 2 && sets[0].size+sets[1].size === graph.size)break;
-        }
-        for(let set of sets){
-            if(set.has(n1) && set.has(n2))continue;
-        }
-
         let usedEdges = new Set;
         for(let i = 0; i < 4; i++){
             const route = markedDijkstra(n1,n2,graph,usedEdges);
@@ -154,20 +144,25 @@ const solution = function(text){
                 usedEdges.add(edge);
             }
         }
-        //inseparablePairs.push([n1,n2]);
+        inseparablePairs.push([n1,n2]);
+    }
+    let sets = [];
+    let all = new Set;
+    outerZwei:
+    for(let [n1,n2] of inseparablePairs){
         all.add(n1);
         all.add(n2);
         for(let set of sets){
             if(set.has(n1) || set.has(n2)){
                 set.add(n1);
                 set.add(n2);
-                continue outer;
+                continue outerZwei;
             }
         }
         sets.push(new Set([n1,n2]));
     }
-    console.log(sets.map(v=>v.size));
-    console.log("Solution:",sets[0].size*sets[1].size);
+    console.log(sets);
+    console.log(sets.length);
 }
 
 
